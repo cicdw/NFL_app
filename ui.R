@@ -1,5 +1,5 @@
 rm(list=ls(all=TRUE))
-setwd('~/Dropbox/Code/NFL_app/')
+#setwd('~/Dropbox/Code/NFL_app/')
 
 library(shiny)
 library(markdown)
