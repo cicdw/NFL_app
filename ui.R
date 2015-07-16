@@ -1,10 +1,5 @@
-rm(list=ls(all=TRUE))
-#setwd('~/Dropbox/Code/NFL_app/')
-
 library(shiny)
 library(markdown)
-
-source('main_functions.R')
 
 fluidPage(
   sidebarLayout(
@@ -14,11 +9,14 @@ fluidPage(
       hr(),
       h4('Choose some data:'),
       selectInput("stat", label = "Game Statistic:", 
-                  choices = names(map),
+                  choices = names(data_box),
                   selected = 'Score'),
       selectInput("year", label = "Season Year:", 
-                  choices = unique(boxscores$season_year), 
+                  choices = unique(data_box$season_year), 
                   selected = '2013'),
+      hr(),
+      sliderInput("rank", label = "Matrix Rank",
+                  min = 1, max = 15, value = 1),
       hr()
     ),
     mainPanel(

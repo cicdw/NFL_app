@@ -1,6 +1,10 @@
+setwd('~/Dropbox/Code/NFL_app/')
+
 library(shiny)
 library(markdown)
 library(ggplot2)
+
+source('main_functions.R')
 
 function(input,output){
   
@@ -9,22 +13,21 @@ function(input,output){
     df <- data.frame(Team = team_ids, Off = sqrt(selected_data$d)*abs(selected_data$u),
                      Def = sqrt(selected_data$d)*abs(selected_data$v))
     
-    post_season <- subset(boxscores, season_year %in% c(input$year) & season_type %in% c('Postseason'))
-    df$post <- ifelse(df$Team %in% post_season$home_team | df$Team %in% post_season$away_team,'In Postseason',
-                      'Not in Postseason')
+    post_season <- subset(data_box, season_year %in% c(input$year) & season_type %in% c('Postseason'))
+    df$post <- ifelse(df$Team %in% post_season$Team,'In Postseason','Not in Postseason')
     
     df
   })
   
   df.2 <- reactive({ # data.frame for regression
-    post_season <- subset(boxscores, season_year %in% c(input$year) & season_type %in% c('Postseason'))
-    idx <- match(input$stat, names(map))
-    stat_idx <- match(map[idx], names(post_season))
-    y_out <- c(post_season[,stat_idx], post_season[,stat_idx+1]) # dependent variable
-    gamekeys <- c(post_season$gamekey, post_season$gamekey) # want to color by whether they were in the game together
-    x_in <- c(df()$Off[post_season$h_ID]*df()$Def[post_season$a_ID],
-              df()$Off[post_season$a_ID]*df()$Def[post_season$h_ID])
-    data.frame(Game = gamekeys, Observed = y_out, Predicted = x_in)
+    post_season <- subset(data_box, season_year %in% c(input$year) & season_type %in% c('Postseason'))
+    idx <- match(input$stat, names(data_box))
+    
+    y_out <- post_season[,idx] # dependent variable
+    d2 <- ranker(stat = input$stat, year = input$year, rank = input$rank)
+    #R <- as.matrix(d2$u)%*%as.matrix(diag(d2$d))%*%t(as.matrix(d2$v))
+    x_in <- df()$Off[post_season$Team_ID]*df()$Def[post_season$Opp_Team_ID]
+    data.frame(Game = post_season$gamekey, Observed = y_out, Predicted = x_in)
   })
   
   output$plot1 <- renderPlot({

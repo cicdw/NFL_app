@@ -1,33 +1,37 @@
 ## functions for working with the NFL dataset
-library('softImpute')
-boxscores <- readRDS("Data/boxscores.rds")
-team_ids <- unique(boxscores$home_team)
-boxscores$h_ID <- match(boxscores$home_team,team_ids)
-boxscores$a_ID <- match(boxscores$away_team,team_ids)
+rm(list=ls(all=TRUE))
 
-map <- list(Score = 'home_score',
-            Pass_yds_att = 'hpyatt',
-            TDs = 'home_tds',
-            FGs = 'home_fgs',
-            Defense_Ffum = 'home_defense_ffum',
-            Rushing_yds = 'home_rushing_yds',
-            Defense_int = 'home_defense_int',
-            Sacks = 'home_defense_sk')
+library('softImpute')
+data_box <- readRDS("Data/data_box.rds")
+team_ids <- unique(data_box$Team)
+data_box$Team_ID <- match(data_box$Team,team_ids)
+data_box$Opp_Team_ID <- match(data_box$Opp_Team,team_ids)
 
 ranker <- function(stat, year, rank){
-  game_data <- subset(boxscores, season_year %in% c(year) & season_type %in% c('Regular'))
+  game_data <- subset(data_box, season_year %in% c(year) & season_type %in% c('Regular'))
   A <- matrix(NA,length(team_ids),length(team_ids))
-  idx <- match(stat, names(map))
-  stat_idx <- match(map[idx], names(game_data))
+  idx <- match(stat, names(data_box))
     
   for(k in 1:nrow(game_data)){
-    A[game_data$h_ID[k],
-      game_data$a_ID[k]] <- game_data[k,stat_idx]
-    
-    A[game_data$a_ID[k],
-      game_data$h_ID[k]] <- game_data[k,stat_idx+1]
+    A[game_data$Team_ID[k],
+      game_data$Opp_Team_ID[k]] <- game_data[k,idx]
   }
   
-  R <- softImpute(A, rank.max=rank, maxit=1e3)
+  d_right <- sqrt(colSums(A, na.rm=TRUE))
+  d_left <- sqrt(rowSums(A, na.rm=TRUE))
+  A <- sweep(sweep(A, 2, d_right, FUN='/'), 1, d_left, FUN='/')
+  
+  #diag(A) <- 0
+  R <- softImpute(A, rank.max=rank, maxit=1e3, lambda=.1)
+
   return(R)
+}
+
+linear_features <- function(stat, year){
+  game_data <- subset(data_box, season_year %in% c(year) & season_type %in% c('Regular'))
+  idx <- match(stat, names(game_data))
+  fit <- lm(game_data[,idx] ~ Team + Opp_Team, data = game_data)
+  Off <- sapply(names(fit$coefficients[2:32]), strsplit, split = 'Team', fixed=TRUE)
+  
+  return(fit)
 }
