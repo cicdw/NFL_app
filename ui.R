@@ -24,7 +24,12 @@ fluidPage(
     mainPanel(
       tabsetPanel(
         tabPanel("Rankings", plotOutput("plot1")),
-        tabPanel("Predictive Power", plotOutput("plot2")),
+        tabPanel("Predictive Power", 
+                 plotOutput("plot2"),
+                 h5("Statistics of the trained model:", style = "color:black"),
+                 tableOutput("lmStats"),
+                 h5("Coefficients of the trained model:", style = "color:black"),
+                 tableOutput("lmResults")),
         tabPanel("About", includeHTML("about.html")))
     )
   )
